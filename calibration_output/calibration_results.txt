@@ -1,0 +1,49 @@
+CSc 8830 COMPUTER VISION
+CAMERA CALIBRATION RESULTS
+========================================
+
+Checkerboard Inner Corners: 9 x 6
+Square Size Used: 25.000 mm
+Image Resolution: 1200 x 1600 pixels
+Total Images: 19
+Successful Images: 17
+
+CAMERA INTRINSIC MATRIX K
+[[1.16021621e+03 0.00000000e+00 6.05623960e+02]
+ [0.00000000e+00 1.14719191e+03 6.45474369e+02]
+ [0.00000000e+00 0.00000000e+00 1.00000000e+00]]
+
+INTRINSIC PARAMETERS
+fx = 1160.216211 pixels
+fy = 1147.191908 pixels
+cx = 605.623960 pixels
+cy = 645.474369 pixels
+
+DISTORTION COEFFICIENTS
+[[-0.00597957  0.12974463 -0.00750799  0.0014783  -0.11945499]]
+
+CALIBRATION ERROR STATISTICS
+OpenCV RMS Error: 0.579764 pixels
+Mean Error: 0.539099 pixels
+Median Error: 0.431954 pixels
+Minimum Error: 0.314641 pixels
+Maximum Error: 1.017788 pixels
+
+PER-IMAGE REPROJECTION ERROR
+10.jpeg: 0.502097 pixels
+12.jpeg: 0.679545 pixels
+13.jpeg: 0.314641 pixels
+16.jpeg: 0.413440 pixels
+17.jpeg: 0.344804 pixels
+18.jpeg: 0.715928 pixels
+19.jpeg: 1.017788 pixels
+20.jpeg: 0.707382 pixels
+21.jpeg: 0.668956 pixels
+3.jpeg: 0.986721 pixels
+4.jpeg: 0.464682 pixels
+5.jpeg: 0.357910 pixels
+6.jpeg: 0.407465 pixels
+7.jpeg: 0.431954 pixels
+8.jpeg: 0.347232 pixels
+9.jpeg: 0.380135 pixels
+image_1.jpeg: 0.424005 pixels
