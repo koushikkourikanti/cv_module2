@@ -767,6 +767,183 @@ def run_live_calibration(
     }
 
 
+
+# ============================================================
+# MODULE 3 - IMAGE FILTERING HELPERS
+# ============================================================
+
+MODULE3_SAMPLE_IMAGE = Path(
+    "module3/sample_images/test_image.jpg"
+)
+
+
+def module3_make_box_kernel(kernel_size):
+    """
+    Create a normalized square box-blur kernel.
+    """
+
+    kernel = np.ones(
+        (kernel_size, kernel_size),
+        dtype=np.float64
+    )
+
+    return kernel / np.sum(kernel)
+
+
+def module3_spatial_filter(
+    image_data,
+    kernel
+):
+    """
+    Apply the blur directly in the spatial domain.
+
+    For the symmetric box kernel used in this assignment,
+    cv2.filter2D produces the same result as convolution.
+    """
+
+    return cv2.filter2D(
+        image_data,
+        ddepth=-1,
+        kernel=kernel,
+        borderType=cv2.BORDER_CONSTANT
+    )
+
+
+def module3_fourier_filter(
+    image_data,
+    kernel
+):
+    """
+    Apply equivalent linear convolution by multiplying
+    the Fourier transforms of the image and filter.
+    """
+
+    image_height, image_width = image_data.shape
+    kernel_height, kernel_width = kernel.shape
+
+    fft_height = (
+        image_height
+        + kernel_height
+        - 1
+    )
+
+    fft_width = (
+        image_width
+        + kernel_width
+        - 1
+    )
+
+    image_fft = np.fft.fft2(
+        image_data,
+        s=(fft_height, fft_width)
+    )
+
+    kernel_fft = np.fft.fft2(
+        kernel,
+        s=(fft_height, fft_width)
+    )
+
+    frequency_product = (
+        image_fft
+        * kernel_fft
+    )
+
+    full_result = np.real(
+        np.fft.ifft2(
+            frequency_product
+        )
+    )
+
+    offset_y = kernel_height // 2
+    offset_x = kernel_width // 2
+
+    return full_result[
+        offset_y:
+        offset_y + image_height,
+        offset_x:
+        offset_x + image_width
+    ]
+
+
+def module3_fourier_spectrum(
+    image_data
+):
+    """
+    Create a displayable centered log-magnitude
+    Fourier spectrum.
+    """
+
+    fft_result = np.fft.fft2(
+        image_data
+    )
+
+    shifted = np.fft.fftshift(
+        fft_result
+    )
+
+    magnitude = np.log1p(
+        np.abs(shifted)
+    )
+
+    normalized = cv2.normalize(
+        magnitude,
+        None,
+        0,
+        255,
+        cv2.NORM_MINMAX
+    )
+
+    return normalized.astype(
+        np.uint8
+    )
+
+
+def module3_compare_methods(
+    image_data,
+    kernel_size
+):
+    """
+    Run spatial and Fourier filtering with the same
+    box kernel and return numerical validation.
+    """
+
+    kernel = module3_make_box_kernel(
+        kernel_size
+    )
+
+    spatial = module3_spatial_filter(
+        image_data,
+        kernel
+    )
+
+    fourier = module3_fourier_filter(
+        image_data,
+        kernel
+    )
+
+    difference = np.abs(
+        spatial - fourier
+    )
+
+    return {
+        "kernel_size": kernel_size,
+        "spatial": spatial,
+        "fourier": fourier,
+        "difference": difference,
+        "mae": float(
+            np.mean(difference)
+        ),
+        "mse": float(
+            np.mean(
+                difference ** 2
+            )
+        ),
+        "max_difference": float(
+            np.max(difference)
+        )
+    }
+
+
 # ============================================================
 # LOAD SAVED CAMERA CALIBRATION
 # ============================================================
@@ -902,7 +1079,8 @@ page = st.sidebar.radio(
         "🎯 Camera Calibration",
         "📐 Live Object Measurement",
         "📊 Validation Analytics",
-        "🧠 Projection Theory"
+        "🧠 Projection Theory",
+        "🌀 Module 3 - Image Filtering"
     ]
 )
 
@@ -930,19 +1108,29 @@ if validation_df is not None:
     )
 
 
+# ============================================================
+# GITHUB REPOSITORY LINKS
+# ============================================================
+
+st.sidebar.subheader(
+    "GitHub Repositories"
+)
+
 st.sidebar.link_button(
-    "🔗 GitHub Repository",
-    (
-        "https://github.com/"
-        "koushikkourikanti/"
-        "cv_module2"
-    ),
+    "🔗 Module 2 GitHub",
+    "https://github.com/koushikkourikanti/cv_module2",
+    use_container_width=True
+)
+
+st.sidebar.link_button(
+    "🔗 Module 3 GitHub",
+    "https://github.com/koushikkourikanti/cv_module3",
     use_container_width=True
 )
 
 
 st.sidebar.caption(
-    "CSc 8830 · Module 2"
+    "CSc 8830 · Modules 2 & 3"
 )
 
 
@@ -3823,6 +4011,664 @@ elif page == "🧠 Projection Theory":
         )
 
 
+
+# ============================================================
+# MODULE 3 - IMAGE FILTERING
+# ============================================================
+
+elif page == "🌀 Module 3 - Image Filtering":
+
+    st.header(
+        "🌀 Module 3 — Image Filtering"
+    )
+
+    st.caption(
+        "Spatial-domain convolution • "
+        "Fourier-domain multiplication • "
+        "Experimental validation"
+    )
+
+    with st.container(
+        border=True
+    ):
+
+        st.subheader(
+            "Assignment Objective"
+        )
+
+        st.write(
+            """
+            This experiment implements image blurring
+            with a spatial filter and then performs the
+            equivalent operation in the Fourier domain.
+
+            The same normalized box-blur kernel is used
+            in both approaches so the two numerical
+            outputs can be compared directly.
+            """
+        )
+
+        st.latex(
+            r"""
+            g(x,y)
+            =
+            f(x,y) * h(x,y)
+            """
+        )
+
+        st.latex(
+            r"""
+            G(u,v)
+            =
+            F(u,v)\,H(u,v)
+            """
+        )
+
+        st.info(
+            "The convolution theorem predicts that "
+            "spatial convolution and Fourier-domain "
+            "multiplication produce the same result, "
+            "apart from floating-point numerical precision."
+        )
+
+    st.divider()
+
+    # --------------------------------------------------------
+    # IMAGE SOURCE
+    # --------------------------------------------------------
+
+    st.subheader(
+        "1. Select or Upload an Image"
+    )
+
+    st.write(
+        """
+        Test the filtering system using the included project
+        image or upload a completely new image. The same
+        spatial-domain and Fourier-domain processing will be
+        performed on either input.
+        """
+    )
+
+    source_mode = st.radio(
+        "Choose Image Source",
+        [
+            "Use Project Test Image",
+            "Upload and Test New Image"
+        ],
+        horizontal=True,
+        key="module3_source_mode"
+    )
+
+    module3_pil = None
+    module3_image_name = None
+
+    if source_mode == "Use Project Test Image":
+
+        st.info(
+            "Using the included Module 3 test image."
+        )
+
+        if MODULE3_SAMPLE_IMAGE.exists():
+
+            module3_pil = (
+                Image.open(
+                    MODULE3_SAMPLE_IMAGE
+                )
+                .convert(
+                    "RGB"
+                )
+            )
+
+            module3_image_name = (
+                MODULE3_SAMPLE_IMAGE.name
+            )
+
+        else:
+
+            st.error(
+                "The Module 3 sample image was not found."
+            )
+
+            st.code(
+                "module3/sample_images/test_image.jpg"
+            )
+
+    else:
+
+        with st.container(
+            border=True
+        ):
+
+            st.subheader(
+                "📤 Upload Image for Live Test"
+            )
+
+            st.write(
+                """
+                Upload any JPG, JPEG or PNG image.
+                The application will process the uploaded
+                image directly and compare spatial filtering
+                with Fourier-domain filtering.
+                """
+            )
+
+            module3_uploaded = st.file_uploader(
+                "Choose an image",
+                type=[
+                    "jpg",
+                    "jpeg",
+                    "png"
+                ],
+                key="module3_image_upload"
+            )
+
+            if module3_uploaded is not None:
+
+                try:
+
+                    module3_pil = (
+                        Image.open(
+                            io.BytesIO(
+                                module3_uploaded.getvalue()
+                            )
+                        )
+                    )
+
+                    module3_pil = (
+                        ImageOps.exif_transpose(
+                            module3_pil
+                        )
+                        .convert(
+                            "RGB"
+                        )
+                    )
+
+                    module3_image_name = (
+                        module3_uploaded.name
+                    )
+
+                    st.success(
+                        "✓ Image uploaded successfully. "
+                        "Live filtering results are shown below."
+                    )
+
+                except Exception as error:
+
+                    st.error(
+                        f"Unable to read image: {error}"
+                    )
+
+    if module3_pil is None:
+
+        if (
+            source_mode ==
+            "Upload and Test New Image"
+        ):
+
+            st.warning(
+                "Upload an image above to run the "
+                "Module 3 experiment."
+            )
+
+        else:
+
+            st.warning(
+                "The project test image could not be loaded."
+            )
+
+    else:
+
+        # Convert RGB image to grayscale for the experiment.
+        module3_rgb = np.array(
+            module3_pil
+        )
+
+        module3_gray = cv2.cvtColor(
+            module3_rgb,
+            cv2.COLOR_RGB2GRAY
+        )
+
+        module3_gray_float = (
+            module3_gray.astype(
+                np.float64
+            )
+        )
+
+        image_height, image_width = (
+            module3_gray.shape
+        )
+
+        i1, i2, i3 = st.columns(
+            3
+        )
+
+        i1.metric(
+            "Image",
+            module3_image_name
+        )
+
+        i2.metric(
+            "Resolution",
+            f"{image_width} × {image_height}"
+        )
+
+        i3.metric(
+            "Processing",
+            "Grayscale"
+        )
+
+        preview_left, preview_right = (
+            st.columns(2)
+        )
+
+        with preview_left:
+
+            st.image(
+                module3_pil,
+                caption="Original RGB image",
+                use_container_width=True
+            )
+
+        with preview_right:
+
+            st.image(
+                module3_gray,
+                caption="Grayscale image used for filtering",
+                use_container_width=True,
+                clamp=True
+            )
+
+        st.divider()
+
+        # ----------------------------------------------------
+        # LIVE FILTERING EXPERIMENT
+        # ----------------------------------------------------
+
+        st.subheader(
+            "2. Live Filtering Experiment"
+        )
+
+        kernel_size = st.select_slider(
+            "Select box-filter kernel size",
+            options=[
+                3,
+                5,
+                9,
+                15,
+                25
+            ],
+            value=15,
+            format_func=lambda value:
+                f"{value} × {value}",
+            key="module3_kernel_size"
+        )
+
+        st.caption(
+            "A larger kernel averages a wider "
+            "neighborhood and therefore produces "
+            "stronger blurring."
+        )
+
+        result = module3_compare_methods(
+            module3_gray_float,
+            kernel_size
+        )
+
+        spatial_uint8 = np.clip(
+            result["spatial"],
+            0,
+            255
+        ).astype(
+            np.uint8
+        )
+
+        fourier_uint8 = np.clip(
+            result["fourier"],
+            0,
+            255
+        ).astype(
+            np.uint8
+        )
+
+        difference = result[
+            "difference"
+        ]
+
+        difference_threshold = 1e-9
+
+        if (
+            np.max(difference)
+            > difference_threshold
+        ):
+
+            difference_visual = (
+                cv2.normalize(
+                    difference,
+                    None,
+                    0,
+                    255,
+                    cv2.NORM_MINMAX
+                )
+                .astype(
+                    np.uint8
+                )
+            )
+
+        else:
+
+            difference_visual = (
+                np.zeros_like(
+                    module3_gray,
+                    dtype=np.uint8
+                )
+            )
+
+        spectrum = (
+            module3_fourier_spectrum(
+                module3_gray_float
+            )
+        )
+
+        result_col1, result_col2 = (
+            st.columns(2)
+        )
+
+        with result_col1:
+
+            st.image(
+                spatial_uint8,
+                caption=(
+                    "Spatial-domain blur "
+                    f"({kernel_size} × {kernel_size})"
+                ),
+                use_container_width=True,
+                clamp=True
+            )
+
+        with result_col2:
+
+            st.image(
+                fourier_uint8,
+                caption=(
+                    "Fourier-domain blur "
+                    f"({kernel_size} × {kernel_size})"
+                ),
+                use_container_width=True,
+                clamp=True
+            )
+
+        st.subheader(
+            "Difference and Frequency Spectrum"
+        )
+
+        diff_col, spectrum_col = (
+            st.columns(2)
+        )
+
+        with diff_col:
+
+            st.image(
+                difference_visual,
+                caption=(
+                    "Difference image "
+                    "(black = no measurable difference)"
+                ),
+                use_container_width=True,
+                clamp=True
+            )
+
+        with spectrum_col:
+
+            st.image(
+                spectrum,
+                caption=(
+                    "Centered log-magnitude "
+                    "Fourier spectrum"
+                ),
+                use_container_width=True,
+                clamp=True
+            )
+
+        st.divider()
+
+        # ----------------------------------------------------
+        # NUMERICAL VALIDATION
+        # ----------------------------------------------------
+
+        st.subheader(
+            "3. Numerical Validation"
+        )
+
+        v1, v2, v3 = st.columns(
+            3
+        )
+
+        v1.metric(
+            "Mean Absolute Error",
+            f"{result['mae']:.12f}"
+        )
+
+        v2.metric(
+            "Mean Squared Error",
+            f"{result['mse']:.12f}"
+        )
+
+        v3.metric(
+            "Maximum Difference",
+            f"{result['max_difference']:.12f}"
+        )
+
+        if (
+            result["max_difference"]
+            < 1e-9
+        ):
+
+            st.success(
+                "✓ The spatial and Fourier results "
+                "match to floating-point precision."
+            )
+
+        else:
+
+            st.info(
+                "The methods are numerically very close. "
+                "Any remaining difference is reported "
+                "above and can arise from floating-point "
+                "precision or boundary handling."
+            )
+
+        st.divider()
+
+        # ----------------------------------------------------
+        # MULTI-KERNEL EXPERIMENT
+        # ----------------------------------------------------
+
+        st.subheader(
+            "4. Multi-Kernel Validation"
+        )
+
+        validation_rows = []
+
+        for test_kernel_size in [
+            3,
+            5,
+            9,
+            15,
+            25
+        ]:
+
+            test_result = (
+                module3_compare_methods(
+                    module3_gray_float,
+                    test_kernel_size
+                )
+            )
+
+            validation_rows.append(
+                {
+                    "Kernel":
+                        (
+                            f"{test_kernel_size}"
+                            " × "
+                            f"{test_kernel_size}"
+                        ),
+
+                    "MAE":
+                        test_result[
+                            "mae"
+                        ],
+
+                    "MSE":
+                        test_result[
+                            "mse"
+                        ],
+
+                    "Maximum Difference":
+                        test_result[
+                            "max_difference"
+                        ]
+                }
+            )
+
+        validation_table = pd.DataFrame(
+            validation_rows
+        )
+
+        st.dataframe(
+            validation_table.style.format(
+                {
+                    "MAE": "{:.12f}",
+                    "MSE": "{:.12f}",
+                    "Maximum Difference":
+                        "{:.12f}"
+                }
+            ),
+            use_container_width=True,
+            hide_index=True
+        )
+
+        st.write(
+            """
+            Testing several filter sizes demonstrates
+            that the equivalence is not limited to one
+            particular blur kernel size.
+            """
+        )
+
+        st.divider()
+
+        # ----------------------------------------------------
+        # THEORY
+        # ----------------------------------------------------
+
+        st.subheader(
+            "5. Convolution Theorem"
+        )
+
+        with st.container(
+            border=True
+        ):
+
+            st.write(
+                """
+                Let the image be \(f(x,y)\) and the
+                spatial blur kernel be \(h(x,y)\).
+                Direct spatial filtering gives:
+                """
+            )
+
+            st.latex(
+                r"""
+                g(x,y)
+                =
+                f(x,y) * h(x,y)
+                """
+            )
+
+            st.write(
+                """
+                Taking the two-dimensional Fourier
+                transform and applying the convolution
+                theorem gives:
+                """
+            )
+
+            st.latex(
+                r"""
+                \mathcal{F}
+                \{
+                f*h
+                \}
+                =
+                F(u,v)H(u,v)
+                """
+            )
+
+            st.write(
+                """
+                Therefore the same filtered image can
+                be recovered with an inverse Fourier
+                transform:
+                """
+            )
+
+            st.latex(
+                r"""
+                g(x,y)
+                =
+                \mathcal{F}^{-1}
+                \{
+                F(u,v)H(u,v)
+                \}
+                """
+            )
+
+            st.success(
+                "The live numerical results above "
+                "provide experimental validation of "
+                "this theorem for the implemented "
+                "image-blurring filters."
+            )
+
+        st.divider()
+
+        # ----------------------------------------------------
+        # PROFESSOR TEST WORKFLOW
+        # ----------------------------------------------------
+
+        st.subheader(
+            "Professor Test Workflow"
+        )
+
+        with st.container(
+            border=True
+        ):
+
+            st.markdown(
+                """
+                **1.** Open the Module 3 page.
+
+                **2.** Use the included test image or
+                upload a new JPG/PNG image.
+
+                **3.** Select a blur kernel size.
+
+                **4.** Compare the spatial-domain and
+                Fourier-domain blurred outputs.
+
+                **5.** Inspect the difference image and
+                Fourier magnitude spectrum.
+
+                **6.** Review MAE, MSE and maximum
+                difference.
+
+                **7.** Review the multi-kernel validation
+                table and convolution-theorem derivation.
+                """
+            )
+
+
 # ============================================================
 # FOOTER
 # ============================================================
@@ -3830,8 +4676,7 @@ elif page == "🧠 Projection Theory":
 st.divider()
 
 st.caption(
-    "VisionMetric • CSc 8830 Computer Vision • "
-    "Module 2 • Camera Calibration • "
-    "Perspective Projection • "
-    "Interactive Object Measurement"
+    "CSc 8830 Computer Vision • "
+    "Module 2: Camera Calibration & Measurement • "
+    "Module 3: Spatial & Fourier Image Filtering"
 )
