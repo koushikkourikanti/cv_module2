@@ -1,0 +1,11 @@
+OpenCV vs SAM2.1 Segmentation Agreement
+======================================
+SAM2 score: 0.977709
+OpenCV foreground pixels: 125488
+SAM2 foreground pixels: 119720
+Intersection pixels: 117966
+Union pixels: 127242
+IoU agreement: 0.927100
+Dice agreement: 0.962171
+
+Important: IoU and Dice here measure agreement between the OpenCV and SAM2 segmentations. They are not ground-truth accuracy measurements.

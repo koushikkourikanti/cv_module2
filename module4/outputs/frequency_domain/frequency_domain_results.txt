@@ -1,0 +1,17 @@
+CSc 8830 - Module 4 - Question 3
+Frequency Domain Analysis
+==================================================
+
+Image width: 675
+Image height: 900
+Cutoff frequency D0: 54
+Edge Otsu threshold: 21.00
+Segmentation Otsu threshold: 115.00
+
+Edge Detection:
+High-frequency components were preserved using an ideal high-pass filter.
+The inverse DFT produced a spatial-domain edge-enhanced image.
+
+Segmentation:
+Low-frequency components were preserved using an ideal low-pass filter.
+The smoothed inverse-DFT image was segmented using Otsu thresholding.

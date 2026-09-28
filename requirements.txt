@@ -1,7 +1,7 @@
 streamlit
+opencv-python-headless
 numpy
 pandas
 plotly
 Pillow
 streamlit-image-coordinates
-opencv-python-headless

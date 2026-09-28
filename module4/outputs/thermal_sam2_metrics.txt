@@ -1,0 +1,14 @@
+CSc 8830 - Module 4
+Thermal OpenCV vs SAM2.1 Comparison
+==================================================
+
+SAM2 predicted score: 0.9643
+OpenCV foreground pixels: 128644
+SAM2 foreground pixels: 130231
+Intersection pixels: 128271
+Union pixels: 130604
+IoU agreement: 0.9821
+Dice agreement: 0.9910
+
+NOTE:
+IoU and Dice represent agreement between the classical OpenCV segmentation and SAM2.1. They do not represent ground-truth segmentation accuracy.
